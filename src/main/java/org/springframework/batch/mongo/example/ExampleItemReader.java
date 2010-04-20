@@ -1,10 +1,12 @@
 package org.springframework.batch.mongo.example;
 
 import org.springframework.batch.item.ItemReader;
+import org.springframework.stereotype.Component;
 
 /**
  * {@link ItemReader} with hard-coded input data.
  */
+@Component
 public class ExampleItemReader implements ItemReader<String> {
 
     private String[] input = {"Hello world!", null};

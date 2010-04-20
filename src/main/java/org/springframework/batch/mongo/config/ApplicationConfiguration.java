@@ -7,7 +7,7 @@ import org.springframework.batch.core.configuration.JobRegistry;
 import org.springframework.batch.core.configuration.support.JobRegistryBeanPostProcessor;
 import org.springframework.batch.core.configuration.support.MapJobRegistry;
 import org.springframework.batch.core.explore.JobExplorer;
-import org.springframework.batch.core.explore.support.JobExplorerFactoryBean;
+import org.springframework.batch.core.explore.support.SimpleJobExplorer;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.core.launch.support.SimpleJobLauncher;
 import org.springframework.batch.core.launch.support.SimpleJobOperator;
@@ -76,9 +76,7 @@ public class ApplicationConfiguration {
 
     @Bean
     public JobExplorer jobExplorer() {
-        JobExplorerFactoryBean factoryBean = new JobExplorerFactoryBean();
-//        factoryBean.setDataSource();
-        return configurationSupport.getObject(factoryBean);
+        return new SimpleJobExplorer(jobInstanceDao, jobExecutionDao, stepExecutionDao, executionContextDao);
     }
 
     @Bean

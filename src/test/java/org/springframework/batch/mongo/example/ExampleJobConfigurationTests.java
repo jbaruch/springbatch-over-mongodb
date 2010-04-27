@@ -15,34 +15,49 @@
  */
 package org.springframework.batch.mongo.example;
 
+import com.mongodb.DB;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.batch.core.BatchStatus;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobInstance;
 import org.springframework.batch.core.launch.JobOperator;
+import org.springframework.batch.mongo.config.Database;
 import org.springframework.batch.test.JobLauncherTestUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+
+import javax.inject.Inject;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-@ContextConfiguration(locations = {"/test-context.xml"})
+@ContextConfiguration(locations = {"classpath:application-config.xml"})
 @RunWith(SpringJUnit4ClassRunner.class)
 public class ExampleJobConfigurationTests {
 
-    @Autowired
+    @Inject
     private JobOperator jobOperator;
 
-    @Autowired
+    @Inject
     private JobLauncherTestUtils jobLauncherTestUtils;
+
+    @Inject
+    @Database(Database.Purpose.BATCH)
+    private DB batchDB;
+
+    @Before
+    public void setUp() {
+        batchDB.dropDatabase();
+    }
 
     /**
      * Create a unique job instance and check it's execution completes
      * successfully - uses the convenience methods provided by the testing
      * superclass.
+     *
+     * @throws Exception when shit happens
      */
     @Test
     public void testLaunchJob() throws Exception {
@@ -54,6 +69,8 @@ public class ExampleJobConfigurationTests {
     /**
      * Execute a fresh {@link JobInstance} using {@link JobOperator} - closer to
      * a remote invocation scenario.
+     *
+     * @throws Exception when shit happens
      */
     @Test
     public void testLaunchByJobOperator() throws Exception {

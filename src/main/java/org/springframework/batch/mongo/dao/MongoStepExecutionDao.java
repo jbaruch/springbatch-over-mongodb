@@ -1,9 +1,8 @@
 package org.springframework.batch.mongo.dao;
 
-import com.mongodb.BasicDBObject;
-import com.mongodb.BasicDBObjectBuilder;
-import com.mongodb.DBCollection;
-import com.mongodb.DBObject;
+import com.mongodb.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.BatchStatus;
 import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.JobExecution;
@@ -19,6 +18,7 @@ import java.util.Date;
 import static com.mongodb.BasicDBObjectBuilder.start;
 import static org.springframework.batch.mongo.dao.MongoJobExecutionDao.JOB_EXECUTION_ID_KEY;
 import static org.springframework.batch.mongo.dao.MongoJobExecutionDao.jobExecutionIdObj;
+import static org.springframework.util.Assert.notNull;
 
 /**
  * Created by IntelliJ IDEA.
@@ -38,7 +38,7 @@ public class MongoStepExecutionDao extends AbstractMongoDao implements StepExecu
     protected static final String WRITE_SKIP_COUNT_KEY = "writeSkipCount";
     protected static final String PROCESS_SKIP_COUT_KEY = "processSkipCout";
     protected static final String ROLLBACK_COUNT_KEY = "rollbackCount";
-    private final Object lock = new Object();
+    private static final Logger LOG = LoggerFactory.getLogger(MongoStepExecutionDao.class);
 
     @PostConstruct
     public void init() {
@@ -55,7 +55,7 @@ public class MongoStepExecutionDao extends AbstractMongoDao implements StepExecu
 
         validateStepExecution(stepExecution);
 
-        stepExecution.setId(getNexId(StepExecution.class.getSimpleName()));
+        stepExecution.setId(getNextId(StepExecution.class.getSimpleName()));
         stepExecution.incrementVersion(); // should be 0 now
         DBObject object = toDbObjectWithoutVersion(stepExecution);
         object.put(VERSION_KEY, stepExecution.getVersion());
@@ -85,31 +85,35 @@ public class MongoStepExecutionDao extends AbstractMongoDao implements StepExecu
     }
 
     @Override
-    public void updateStepExecution(StepExecution stepExecution) {
+    public synchronized void updateStepExecution(StepExecution stepExecution) {
         // Attempt to prevent concurrent modification errors by blocking here if
         // someone is already trying to do it.
-        synchronized (lock) {
-            Integer version = stepExecution.getVersion() + 1;
-            DBObject object = toDbObjectWithoutVersion(stepExecution);
-            object.put(VERSION_KEY, version);
+        Integer currentVersion = stepExecution.getVersion();
+        Integer newVersion = currentVersion + 1;
+        DBObject object = toDbObjectWithoutVersion(stepExecution);
+        object.put(VERSION_KEY, newVersion);
+        getCollection().update(start()
+                .add(STEP_EXECUTION_ID_KEY, stepExecution.getId())
+                .add(VERSION_KEY, currentVersion).get(),
+                object);
 
-            getCollection().updateMulti(start()
-                    .add(STEP_EXECUTION_ID_KEY, stepExecution.getId())
-                    .add(VERSION_KEY, stepExecution.getVersion()).get(),
-                    object);
-
-            // Avoid concurrent modifications...
-            if (!db.getLastError().containsField(UPDATED_EXISTING_STATUS)) {
-                Integer curentVersion = ((Integer) getCollection().findOne(stepExecutionIdObj(stepExecution.getId()), new BasicDBObject(VERSION_KEY, 1)).get(VERSION_KEY));
-                throw new OptimisticLockingFailureException("Attempt to update job execution id="
-                        + stepExecution.getId() + " with wrong version (" + stepExecution.getVersion()
-                        + "), where current version is " + curentVersion);
+        // Avoid concurrent modifications...
+        DBObject lastError = db.getLastError();
+        if (!((Boolean) lastError.get(UPDATED_EXISTING_STATUS))) {
+            LOG.error("Update returned status {}", lastError);
+            DBObject existingStepExecution = getCollection().findOne(stepExecutionIdObj(stepExecution.getId()), new BasicDBObject(VERSION_KEY, 1));
+            if (existingStepExecution == null) {
+                throw new IllegalArgumentException("Can't update this stepExecution, it was never saved.");
             }
-
-            stepExecution.incrementVersion();
+            Integer curentVersion = ((Integer) existingStepExecution.get(VERSION_KEY));
+            throw new OptimisticLockingFailureException("Attempt to update job execution id="
+                    + stepExecution.getId() + " with wrong version (" + currentVersion
+                    + "), where current version is " + curentVersion);
         }
 
+        stepExecution.incrementVersion();
     }
+
 
     static BasicDBObject stepExecutionIdObj(Long id) {
         return new BasicDBObject(STEP_EXECUTION_ID_KEY, id);
@@ -124,6 +128,9 @@ public class MongoStepExecutionDao extends AbstractMongoDao implements StepExecu
     }
 
     private StepExecution mapStepExecution(DBObject object, JobExecution jobExecution) {
+        if (object == null) {
+            return null;
+        }
         StepExecution stepExecution = new StepExecution((String) object.get(STEP_NAME_KEY), jobExecution, ((Long) object.get(STEP_EXECUTION_ID_KEY)));
         stepExecution.setStartTime((Date) object.get(START_TIME_KEY));
         stepExecution.setEndTime((Date) object.get(END_TIME_KEY));
@@ -136,18 +143,21 @@ public class MongoStepExecutionDao extends AbstractMongoDao implements StepExecu
         stepExecution.setReadSkipCount((Integer) object.get(READ_SKIP_COUNT_KEY));
         stepExecution.setWriteSkipCount((Integer) object.get(WRITE_SKIP_COUNT_KEY));
         stepExecution.setProcessSkipCount((Integer) object.get(PROCESS_SKIP_COUT_KEY));
-        stepExecution.setRollbackCount((Integer) object.get(READ_COUNT_KEY));
+        stepExecution.setRollbackCount((Integer) object.get(ROLLBACK_COUNT_KEY));
         stepExecution.setLastUpdated((Date) object.get(LAST_UPDATED_KEY));
         stepExecution.setVersion((Integer) object.get(VERSION_KEY));
         return stepExecution;
 
     }
 
-    //Weird method implementation in JdbcStepExecutionDao - select query, no return... Bug? Anyhow, mimic as is.
-
     @Override
     public void addStepExecutions(JobExecution jobExecution) {
-        getCollection().find(jobExecutionIdObj(jobExecution.getId())).sort(stepExecutionIdObj(1L));
+        DBCursor stepsCoursor = getCollection().find(jobExecutionIdObj(jobExecution.getId())).sort(stepExecutionIdObj(1L));
+        while (stepsCoursor.hasNext()) {
+            DBObject stepObject = stepsCoursor.next();
+            //Calls constructor of StepExecution, which adds the step; Wow, that's unclear code!
+            mapStepExecution(stepObject, jobExecution);
+        }
     }
 
     @Override
@@ -156,10 +166,10 @@ public class MongoStepExecutionDao extends AbstractMongoDao implements StepExecu
     }
 
     private void validateStepExecution(StepExecution stepExecution) {
-        Assert.notNull(stepExecution);
-        Assert.notNull(stepExecution.getStepName(), "StepExecution step name cannot be null.");
-        Assert.notNull(stepExecution.getStartTime(), "StepExecution start time cannot be null.");
-        Assert.notNull(stepExecution.getStatus(), "StepExecution status cannot be null.");
+        notNull(stepExecution);
+        notNull(stepExecution.getStepName(), "StepExecution step name cannot be null.");
+        notNull(stepExecution.getStartTime(), "StepExecution start time cannot be null.");
+        notNull(stepExecution.getStatus(), "StepExecution status cannot be null.");
     }
 
 }

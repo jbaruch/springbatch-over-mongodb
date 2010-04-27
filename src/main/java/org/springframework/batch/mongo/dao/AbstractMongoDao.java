@@ -3,6 +3,7 @@ package org.springframework.batch.mongo.dao;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
+import com.mongodb.DBObject;
 import org.springframework.batch.mongo.config.Database;
 
 import javax.inject.Inject;
@@ -25,6 +26,8 @@ public abstract class AbstractMongoDao {
     protected static final String LAST_UPDATED_KEY = "lastUpdated";
     protected static final String STATUS_KEY = "status";
     protected static final String SEQUENCES_COLLECTION_NAME = "Sequences";
+    public static final String ID_KEY = "_id";
+    public static final String NS_KEY = "_ns";
 
     @Inject
     @Database(Database.Purpose.BATCH)
@@ -34,10 +37,15 @@ public abstract class AbstractMongoDao {
 
     protected abstract DBCollection getCollection();
 
-    protected Long getNexId(String name) {
+    protected Long getNextId(String name) {
         DBCollection collection = db.getCollection(SEQUENCES_COLLECTION_NAME);
         BasicDBObject sequence = new BasicDBObject("name", name);
         collection.update(sequence, new BasicDBObject("$inc", new BasicDBObject("value", 1L)), true, false);
         return (Long) collection.findOne(sequence).get("value");
+    }
+
+    protected void removeSystemFields(DBObject dbObject) {
+        dbObject.removeField(ID_KEY);
+        dbObject.removeField(NS_KEY);
     }
 }

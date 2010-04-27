@@ -1,4 +1,4 @@
-package org.springframwork.javaconfig.util;
+package org.springframework.javaconfig.util;
 
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;

@@ -68,7 +68,7 @@ public class MongoExecutionContextDao extends AbstractMongoDao implements Execut
         for (Map.Entry<String, Object> entry : executionContext.entrySet()) {
             dbObject.put(entry.getKey(), entry.getValue());
         }
-        getCollection().update(new BasicDBObject(executionIdKey, executionId), dbObject, true, true);
+        getCollection().update(new BasicDBObject(executionIdKey, executionId), dbObject, true, false);
     }
 
     private ExecutionContext getExecutionContext(String executionIdKey, Long executionId) {
@@ -77,6 +77,7 @@ public class MongoExecutionContextDao extends AbstractMongoDao implements Execut
         ExecutionContext executionContext = new ExecutionContext();
         if (result != null) {
             result.removeField(executionIdKey);
+            removeSystemFields(result);
             for (String key : result.keySet()) {
                 executionContext.put(key, result.get(key));
             }

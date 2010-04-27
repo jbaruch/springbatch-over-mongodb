@@ -1,8 +1,7 @@
 package org.springframework.batch.mongo.dao;
 
-import com.google.common.base.Function;
 import com.google.common.collect.Lists;
-import com.google.common.collect.MapMaker;
+import com.google.common.collect.Maps;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
@@ -22,9 +21,10 @@ import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
-import java.util.concurrent.ConcurrentMap;
 
 import static com.mongodb.BasicDBObjectBuilder.start;
+import static org.springframework.batch.mongo.config.ApplicationConfiguration.DOT_ESCAPE_STRING;
+import static org.springframework.batch.mongo.config.ApplicationConfiguration.DOT_STRING;
 
 /**
  * Created by IntelliJ IDEA.
@@ -53,24 +53,23 @@ public class MongoJobInstanceDao extends AbstractMongoDao implements JobInstance
         Assert.state(getJobInstance(jobName, jobParameters) == null,
                 "JobInstance must not already exist");
 
-        Long jobId = getNexId(JobInstance.class.getSimpleName());
+        Long jobId = getNextId(JobInstance.class.getSimpleName());
 
         JobInstance jobInstance = new JobInstance(jobId, jobParameters, jobName);
 
         jobInstance.incrementVersion();
 
-        DBObject params = new BasicDBObject(new MapMaker().makeComputingMap(new Function<String, Object>() {
-            @Override
-            public Object apply(@Nullable String key) {
-                return jobParameters.getParameters().get(key).getValue();
-            }
-        }));
+        Map<String, JobParameter> jobParams = jobParameters.getParameters();
+        Map<String, Object> paramMap = Maps.newHashMapWithExpectedSize(jobParams.size());
+        for (Map.Entry<String, JobParameter> entry : jobParams.entrySet()) {
+            paramMap.put(entry.getKey().replaceAll(DOT_STRING, DOT_ESCAPE_STRING), entry.getValue().getValue());
+        }
         getCollection().save(start()
                 .add(JOB_INSTANCE_ID_KEY, jobId)
                 .add(JOB_NAME_KEY, jobName)
                 .add(JOB_KEY_KEY, createJobKey(jobParameters))
                 .add(VERSION_KEY, jobInstance.getVersion())
-                .add(JOB_PARAMETERS_KEY, params).get());
+                .add(JOB_PARAMETERS_KEY, new BasicDBObject(paramMap)).get());
         return jobInstance;
     }
 
@@ -94,12 +93,13 @@ public class MongoJobInstanceDao extends AbstractMongoDao implements JobInstance
     @Override
     public JobInstance getJobInstance(JobExecution jobExecution) {
         DBObject instanceId = db.getCollection(JobExecution.class.getSimpleName()).findOne(MongoJobExecutionDao.jobExecutionIdObj(jobExecution.getId()), jobInstanceIdObj(1L));
+        removeSystemFields(instanceId);
         return mapJobInstance(getCollection().findOne(instanceId));
     }
 
     @Override
     public List<JobInstance> getJobInstances(String jobName, int start, int count) {
-        return mapJobInstances(getCollection().find(new BasicDBObject(JOB_NAME_KEY, jobName)).sort(jobInstanceIdObj(-1L)).skip(start - 1).limit(count));
+        return mapJobInstances(getCollection().find(new BasicDBObject(JOB_NAME_KEY, jobName)).sort(jobInstanceIdObj(-1L)).skip(start).limit(count));
     }
 
     @SuppressWarnings({"unchecked"})
@@ -140,7 +140,7 @@ public class MongoJobInstanceDao extends AbstractMongoDao implements JobInstance
 
     @Override
     protected DBCollection getCollection() {
-        return db.getCollection(JobInstanceDao.class.getSimpleName());
+        return db.getCollection(JobInstance.class.getSimpleName());
     }
 
     private List<JobInstance> mapJobInstances(DBCursor dbCursor) {
@@ -171,23 +171,23 @@ public class MongoJobInstanceDao extends AbstractMongoDao implements JobInstance
     @SuppressWarnings({"unchecked"})
     private JobParameters getJobParameters(Long jobInstanceId) {
         final Map<String, ?> jobParamsMap = (Map<String, Object>) getCollection().findOne(new BasicDBObject(jobInstanceIdObj(jobInstanceId))).get(JOB_PARAMETERS_KEY);
-        ConcurrentMap<String, JobParameter> map = new MapMaker().makeComputingMap(new Function<String, JobParameter>() {
-            @Override
-            public JobParameter apply(@Nullable String from) {
-                Object param = jobParamsMap.get(from);
-                if (param instanceof String) {
-                    return new JobParameter((String) param);
-                } else if (param instanceof Long) {
-                    return new JobParameter((Long) param);
-                } else if (param instanceof Double) {
-                    return new JobParameter((Double) param);
-                } else if (param instanceof Date) {
-                    return new JobParameter((Date) param);
-                } else {
-                    return null;
-                }
+
+        Map<String, JobParameter> map = Maps.newHashMapWithExpectedSize(jobParamsMap.size());
+        for (Map.Entry<String, ?> entry : jobParamsMap.entrySet()) {
+            Object param = entry.getValue();
+            String key = entry.getKey().replaceAll(DOT_ESCAPE_STRING, DOT_STRING);
+            if (param instanceof String) {
+                map.put(key, new JobParameter((String) param));
+            } else if (param instanceof Long) {
+                map.put(key, new JobParameter((Long) param));
+            } else if (param instanceof Double) {
+                map.put(key, new JobParameter((Double) param));
+            } else if (param instanceof Date) {
+                map.put(key, new JobParameter((Date) param));
+            } else {
+                map.put(key, null);
             }
-        });
+        }
         return new JobParameters(map);
     }
 

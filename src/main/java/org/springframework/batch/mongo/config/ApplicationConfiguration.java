@@ -17,12 +17,14 @@ import org.springframework.batch.core.repository.dao.JobExecutionDao;
 import org.springframework.batch.core.repository.dao.JobInstanceDao;
 import org.springframework.batch.core.repository.dao.StepExecutionDao;
 import org.springframework.batch.core.repository.support.SimpleJobRepository;
+import org.springframework.batch.support.transaction.ResourcelessTransactionManager;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.TaskExecutor;
+import org.springframework.javaconfig.util.ConfigurationSupport;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
-import org.springframwork.javaconfig.util.ConfigurationSupport;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.inject.Inject;
 import java.net.UnknownHostException;
@@ -63,6 +65,10 @@ public class ApplicationConfiguration {
 
     @Inject
     private StepExecutionDao stepExecutionDao;
+
+    public static final String DOT_ESCAPE_STRING = "\\{dot\\}";
+    public static final String DOT_STRING = "\\.";
+
 
     @Bean
     public SimpleJobOperator jobOperator() {
@@ -116,7 +122,6 @@ public class ApplicationConfiguration {
         return new RunIdIncrementer();
     }
 
-
     @Bean
     @Database(Database.Purpose.APPLICATION)
     public DB applicationDb() throws UnknownHostException {
@@ -132,6 +137,11 @@ public class ApplicationConfiguration {
     @Bean
     public Mongo mongo() throws UnknownHostException {
         return new Mongo();
+    }
+
+    @Bean
+    public PlatformTransactionManager transactionManager() {
+        return new ResourcelessTransactionManager();
     }
 
 

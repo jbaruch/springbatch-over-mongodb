@@ -2,6 +2,8 @@ package org.springframework.batch.mongo.dao;
 
 import com.google.common.collect.Sets;
 import com.mongodb.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.BatchStatus;
 import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.JobExecution;
@@ -33,7 +35,7 @@ public class MongoJobExecutionDao extends AbstractMongoDao implements JobExecuti
 
     public static final String JOB_EXECUTION_ID_KEY = "jobExecutionId";
     private static final String CREATE_TIME_KEY = "createTime";
-    private final Object lock = new Object();
+    private static final Logger LOG = LoggerFactory.getLogger(MongoJobExecutionDao.class);
 
     @PostConstruct
     public void init() {
@@ -44,7 +46,12 @@ public class MongoJobExecutionDao extends AbstractMongoDao implements JobExecuti
     public void saveJobExecution(JobExecution jobExecution) {
         validateJobExecution(jobExecution);
         jobExecution.incrementVersion();
-        jobExecution.setId(getNexId(JobExecution.class.getSimpleName()));
+        Long id = getNextId(JobExecution.class.getSimpleName());
+        save(jobExecution, id);
+    }
+
+    private void save(JobExecution jobExecution, Long id) {
+        jobExecution.setId(id);
         DBObject object = toDbObjectWithoutVersion(jobExecution);
         object.put(VERSION_KEY, jobExecution.getVersion());
         getCollection().save(object);
@@ -73,40 +80,44 @@ public class MongoJobExecutionDao extends AbstractMongoDao implements JobExecuti
     }
 
     @Override
-    public void updateJobExecution(JobExecution jobExecution) {
+    public synchronized void updateJobExecution(JobExecution jobExecution) {
         validateJobExecution(jobExecution);
 
-        Assert.notNull(jobExecution.getId(),
+        Long jobExecutionId = jobExecution.getId();
+        Assert.notNull(jobExecutionId,
                 "JobExecution ID cannot be null. JobExecution must be saved before it can be updated");
 
         Assert.notNull(jobExecution.getVersion(),
                 "JobExecution version cannot be null. JobExecution must be saved before it can be updated");
 
-        synchronized (lock) {
-            Integer version = jobExecution.getVersion() + 1;
+        Integer version = jobExecution.getVersion() + 1;
 
-            // Check if given JobExecution's Id already exists, if none is found
-            // it is invalid and an exception should be thrown.
-            if (getCollection().getCount(jobExecutionIdObj(jobExecution.getId())) != 1) {
-                throw new NoSuchObjectException("Invalid JobExecution ID " + jobExecution.getId() + " not found.");
-            }
-            DBObject object = toDbObjectWithoutVersion(jobExecution);
-            object.put(VERSION_KEY, version);
-            getCollection().updateMulti(start()
-                    .add(JOB_EXECUTION_ID_KEY, jobExecution.getId())
-                    .add(VERSION_KEY, jobExecution.getVersion()).get(),
-                    object);
-
-            // Avoid concurrent modifications...
-            if (!db.getLastError().containsField(UPDATED_EXISTING_STATUS)) {
-                Integer curentVersion = ((Integer) getCollection().findOne(jobExecutionIdObj(jobExecution.getId()), new BasicDBObject(VERSION_KEY, 1)).get(VERSION_KEY));
-                throw new OptimisticLockingFailureException("Attempt to update job execution id="
-                        + jobExecution.getId() + " with wrong version (" + jobExecution.getVersion()
-                        + "), where current version is " + curentVersion);
-            }
-
-            jobExecution.incrementVersion();
+        if (getCollection().findOne(jobExecutionIdObj(jobExecutionId)) == null) {
+            throw new NoSuchObjectException("Invalid JobExecution, ID " + jobExecutionId + " not found.");
         }
+
+        DBObject object = toDbObjectWithoutVersion(jobExecution);
+        object.put(VERSION_KEY, version);
+        getCollection().update(start()
+                .add(JOB_EXECUTION_ID_KEY, jobExecutionId)
+                .add(VERSION_KEY, jobExecution.getVersion()).get(),
+                object);
+
+        // Avoid concurrent modifications...
+        DBObject lastError = db.getLastError();
+        if (!((Boolean) lastError.get(UPDATED_EXISTING_STATUS))) {
+            LOG.error("Update returned status {}", lastError);
+            DBObject existingJobExecution = getCollection().findOne(jobExecutionIdObj(jobExecutionId), new BasicDBObject(VERSION_KEY, 1));
+            if (existingJobExecution == null) {
+                throw new IllegalArgumentException("Can't update this jobExecution, it was never saved.");
+            }
+            Integer curentVersion = ((Integer) existingJobExecution.get(VERSION_KEY));
+            throw new OptimisticLockingFailureException("Attempt to update job execution id="
+                    + jobExecutionId + " with wrong version (" + jobExecution.getVersion()
+                    + "), where current version is " + curentVersion);
+        }
+
+        jobExecution.incrementVersion();
     }
 
     @Override
@@ -165,10 +176,14 @@ public class MongoJobExecutionDao extends AbstractMongoDao implements JobExecuti
     @Override
     public void synchronizeStatus(JobExecution jobExecution) {
         Long id = jobExecution.getId();
-        int currentVersion = ((Integer) getCollection().findOne(jobExecutionIdObj(id), new BasicDBObject(VERSION_KEY, 1)).get(VERSION_KEY));
-
+        DBObject jobExecutionObject = getCollection().findOne(jobExecutionIdObj(id));
+        int currentVersion = jobExecutionObject != null ? ((Integer) jobExecutionObject.get(VERSION_KEY)) : 0;
         if (currentVersion != jobExecution.getVersion()) {
-            String status = (String) getCollection().findOne(jobExecutionIdObj(id), new BasicDBObject(STATUS_KEY, 1)).get(STATUS_KEY);
+            if (jobExecutionObject == null) {
+                save(jobExecution, id);
+                jobExecutionObject = getCollection().findOne(jobExecutionIdObj(id));
+            }
+            String status = (String) jobExecutionObject.get(STATUS_KEY);
             jobExecution.upgradeStatus(BatchStatus.valueOf(status));
             jobExecution.setVersion(currentVersion);
         }
@@ -188,6 +203,9 @@ public class MongoJobExecutionDao extends AbstractMongoDao implements JobExecuti
     }
 
     private JobExecution mapJobExecution(JobInstance jobInstance, DBObject dbObject) {
+        if (dbObject == null) {
+            return null;
+        }
         Long id = (Long) dbObject.get(JOB_EXECUTION_ID_KEY);
         JobExecution jobExecution;
 
@@ -196,7 +214,6 @@ public class MongoJobExecutionDao extends AbstractMongoDao implements JobExecuti
         } else {
             jobExecution = new JobExecution(jobInstance, id);
         }
-
         jobExecution.setStartTime((Date) dbObject.get(START_TIME_KEY));
         jobExecution.setEndTime((Date) dbObject.get(END_TIME_KEY));
         jobExecution.setStatus(BatchStatus.valueOf((String) dbObject.get(STATUS_KEY)));

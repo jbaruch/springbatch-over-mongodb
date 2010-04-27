@@ -3,5 +3,5 @@ Spring Batch meta-data persistency DAOs implementation over MongoDB. For more de
 Here's how:
 1. Get MongoDB - http://www.mongodb.org/display/DOCS/Downloads
 2. Get Gradle - http://dist.codehaus.org/gradle
-3. (Optional) Set mongod home in gradle.properties. If you do so, database will automatically start before tests and shutdown after
+3. (Optional, currently windows only) Set mongod home in gradle.properties. If you do so, database will automatically start before tests and shutdown after
 4. Run 'gradle test assemble'

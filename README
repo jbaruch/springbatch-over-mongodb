@@ -1,1 +1,1 @@
-!
+Spring Batch meta-data persistency DAOs implementation over MongoDB. For more details please see http://jbaruch.wordpress.com/2010/04/27/integrating-mongodb-with-spring-batch/

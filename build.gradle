@@ -75,22 +75,28 @@ task replacePoms(dependsOn: install) << {
 }
 
 test.doFirst {
-  if (project.hasProperty('mongodHome') && !((String) project.mongodHome).isEmpty()) {
+  if (project.hasProperty('startMongo') && project.startMongo) {
     def windows = ((String) System.properties['os.name']).toLowerCase().contains("win")
-    def executable = project.mongodHome + "/" + "mongod" + (windows ? ".exe" : "")
-    def line = windows ? "/c start " + executable : executable
-    println "Going to startup Mongo daemon: ${executable}"
-    ant.exec(outputproperty: "cmdOut",
-            errorproperty: "cmdErr",
-            failonerror: "true",
-            executable: windows ? 'cmd.exe' : 'TODO *nix') {
-      arg(line: line)
+    File executable
+    project.mongoExecFound = false
+    if (project.hasProperty('mongoHome')) {
+      executable = new File(project.mongoHome + "/bin/" + "mongod" + (windows ? ".exe" : ""))
+      project.mongoExecFound = executable.isFile();
+    }
+    if (!project.mongoExecFound && !windows) {
+      executable = new File('/bin/mongod');
+      project.mongoExecFound = executable.isFile();
+    }
+    if (project.mongoExecFound) {
+      logger.info("Going to startup MongoDB daemon: ${executable} ...")
+      ant.exec(spawn: true, executable: executable.getAbsolutePath())
     }
   }
 }
 
 test.doLast {
-  if (project.hasProperty('mongodHome') && !((String) project.mongodHome).isEmpty()) {
+  if (project.mongoExecFound) {
+    logger.info('taking MongoDB down...')
     //Shutdown the db. Can't just call the class since script's classpath can't use project classes
     ant.java(classname: 'org.springframework.batch.mongo.util.Shutdown',
             fork: true,

@@ -3,10 +3,10 @@ package org.springframework.batch.mongo.dao;
 import org.junit.runner.RunWith;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.repository.dao.StepExecutionDao;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import javax.inject.Inject;
 
 /**
  * Created by IntelliJ IDEA.
@@ -18,10 +18,10 @@ import javax.inject.Inject;
 @ContextConfiguration(locations = {"classpath:application-config.xml"})
 public class MongoStepExecutionDaoTests extends AbstractStepExecutionDaoTests {
 
-    @Inject
+    @Autowired
     private StepExecutionDao stepExecutionDao;
 
-    @Inject
+    @Autowired
     private JobRepository jobRepository;
 
     @Override

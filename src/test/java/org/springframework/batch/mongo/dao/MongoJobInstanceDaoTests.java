@@ -8,10 +8,10 @@ import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.repository.dao.JobExecutionDao;
 import org.springframework.batch.core.repository.dao.JobInstanceDao;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import javax.inject.Inject;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 
@@ -21,9 +21,9 @@ import static org.junit.Assert.assertEquals;
 @ContextConfiguration(locations = {"classpath:application-config.xml"})
 public class MongoJobInstanceDaoTests extends AbstractJobInstanceDaoTests {
 
-    @Inject
+    @Autowired
     private JobExecutionDao jobExecutionDao;
-    @Inject
+    @Autowired
     private JobInstanceDao jobInstanceDao;
 
     protected JobInstanceDao getJobInstanceDao() {

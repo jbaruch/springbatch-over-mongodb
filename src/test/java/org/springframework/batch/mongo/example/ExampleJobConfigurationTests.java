@@ -25,10 +25,9 @@ import org.springframework.batch.core.JobInstance;
 import org.springframework.batch.core.launch.JobOperator;
 import org.springframework.batch.mongo.config.Database;
 import org.springframework.batch.test.JobLauncherTestUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-
-import javax.inject.Inject;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -37,13 +36,13 @@ import static org.junit.Assert.assertTrue;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class ExampleJobConfigurationTests {
 
-    @Inject
+    @Autowired
     private JobOperator jobOperator;
 
-    @Inject
+    @Autowired
     private JobLauncherTestUtils jobLauncherTestUtils;
 
-    @Inject
+    @Autowired
     @Database(Database.Purpose.BATCH)
     private DB batchDB;
 

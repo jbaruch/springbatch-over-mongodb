@@ -29,7 +29,6 @@ import org.springframework.batch.mongo.config.Database;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.inject.Inject;
 import java.util.Date;
 import java.util.List;
 
@@ -59,7 +58,7 @@ public abstract class AbstractJobDaoTests {
 
     protected Date jobExecutionStartTime = new Date(System.currentTimeMillis());
 
-    @Inject
+    @Autowired
     @Database(Database.Purpose.BATCH)
     protected DB db;
 

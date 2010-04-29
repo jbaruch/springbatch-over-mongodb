@@ -24,10 +24,10 @@ import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.repository.dao.StepExecutionDao;
 import org.springframework.batch.mongo.config.Database;
 import org.springframework.batch.mongo.step.StepSupport;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.inject.Inject;
 import java.util.Collection;
 import java.util.Date;
 
@@ -52,7 +52,7 @@ public abstract class AbstractStepExecutionDaoTests {
 
     protected JobRepository repository;
 
-    @Inject
+    @Autowired
     @Database(Database.Purpose.BATCH)
     protected DB db;
 

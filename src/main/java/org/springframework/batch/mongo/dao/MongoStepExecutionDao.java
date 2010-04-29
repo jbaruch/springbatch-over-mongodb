@@ -29,11 +29,11 @@ import static org.springframework.util.Assert.notNull;
 @Repository
 public class MongoStepExecutionDao extends AbstractMongoDao implements StepExecutionDao {
     protected static final String STEP_EXECUTION_ID_KEY = "stepExecutionId";
-    protected static final String STEP_NAME_KEY = "stepName";
-    protected static final String COMMIT_COUNT_KEY = "commitCount";
-    protected static final String READ_COUNT_KEY = "readCount";
-    protected static final String FILTER_COUT_KEY = "filterCout";
-    protected static final String WRITE_COUNT_KEY = "writeCount";
+    public static final String STEP_NAME_KEY = "stepName";
+    public static final String COMMIT_COUNT_KEY = "commitCount";
+    public static final String READ_COUNT_KEY = "readCount";
+    public static final String FILTER_COUT_KEY = "filterCout";
+    public static final String WRITE_COUNT_KEY = "writeCount";
     protected static final String READ_SKIP_COUNT_KEY = "readSkipCount";
     protected static final String WRITE_SKIP_COUNT_KEY = "writeSkipCount";
     protected static final String PROCESS_SKIP_COUT_KEY = "processSkipCout";
@@ -46,7 +46,6 @@ public class MongoStepExecutionDao extends AbstractMongoDao implements StepExecu
 
     }
 
-    @Override
     public void saveStepExecution(StepExecution stepExecution) {
         Assert.isNull(stepExecution.getId(),
                 "to-be-saved (not updated) StepExecution can't already have an id assigned");
@@ -84,7 +83,6 @@ public class MongoStepExecutionDao extends AbstractMongoDao implements StepExecu
                 .add(LAST_UPDATED_KEY, stepExecution.getLastUpdated()).get();
     }
 
-    @Override
     public synchronized void updateStepExecution(StepExecution stepExecution) {
         // Attempt to prevent concurrent modification errors by blocking here if
         // someone is already trying to do it.
@@ -120,7 +118,6 @@ public class MongoStepExecutionDao extends AbstractMongoDao implements StepExecu
     }
 
 
-    @Override
     public StepExecution getStepExecution(JobExecution jobExecution, Long stepExecutionId) {
         return mapStepExecution(getCollection().findOne(BasicDBObjectBuilder.start()
                 .add(STEP_EXECUTION_ID_KEY, stepExecutionId)
@@ -150,7 +147,6 @@ public class MongoStepExecutionDao extends AbstractMongoDao implements StepExecu
 
     }
 
-    @Override
     public void addStepExecutions(JobExecution jobExecution) {
         DBCursor stepsCoursor = getCollection().find(jobExecutionIdObj(jobExecution.getId())).sort(stepExecutionIdObj(1L));
         while (stepsCoursor.hasNext()) {

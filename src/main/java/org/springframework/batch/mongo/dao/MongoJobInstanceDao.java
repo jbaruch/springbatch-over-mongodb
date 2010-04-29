@@ -1,7 +1,5 @@
 package org.springframework.batch.mongo.dao;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
@@ -14,7 +12,6 @@ import org.springframework.batch.core.repository.dao.JobInstanceDao;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.Assert;
 
-import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
@@ -23,8 +20,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
 import static com.mongodb.BasicDBObjectBuilder.start;
-import static org.springframework.batch.mongo.config.ApplicationConfiguration.DOT_ESCAPE_STRING;
-import static org.springframework.batch.mongo.config.ApplicationConfiguration.DOT_STRING;
 
 /**
  * Created by IntelliJ IDEA.
@@ -45,7 +40,6 @@ public class MongoJobInstanceDao extends AbstractMongoDao implements JobInstance
         getCollection().ensureIndex(jobInstanceIdObj(1L));
     }
 
-    @Override
     public JobInstance createJobInstance(String jobName, final JobParameters jobParameters) {
         Assert.notNull(jobName, "Job name must not be null.");
         Assert.notNull(jobParameters, "JobParameters must not be null.");
@@ -60,7 +54,7 @@ public class MongoJobInstanceDao extends AbstractMongoDao implements JobInstance
         jobInstance.incrementVersion();
 
         Map<String, JobParameter> jobParams = jobParameters.getParameters();
-        Map<String, Object> paramMap = Maps.newHashMapWithExpectedSize(jobParams.size());
+        Map<String, Object> paramMap = new HashMap<String, Object>(jobParams.size());
         for (Map.Entry<String, JobParameter> entry : jobParams.entrySet()) {
             paramMap.put(entry.getKey().replaceAll(DOT_STRING, DOT_ESCAPE_STRING), entry.getValue().getValue());
         }
@@ -73,7 +67,6 @@ public class MongoJobInstanceDao extends AbstractMongoDao implements JobInstance
         return jobInstance;
     }
 
-    @Override
     public JobInstance getJobInstance(String jobName, JobParameters jobParameters) {
         Assert.notNull(jobName, "Job name must not be null.");
         Assert.notNull(jobParameters, "JobParameters must not be null.");
@@ -85,25 +78,21 @@ public class MongoJobInstanceDao extends AbstractMongoDao implements JobInstance
                 .add(JOB_KEY_KEY, jobKey).get()), jobParameters);
     }
 
-    @Override
     public JobInstance getJobInstance(Long instanceId) {
         return mapJobInstance(getCollection().findOne(jobInstanceIdObj(instanceId)));
     }
 
-    @Override
     public JobInstance getJobInstance(JobExecution jobExecution) {
         DBObject instanceId = db.getCollection(JobExecution.class.getSimpleName()).findOne(MongoJobExecutionDao.jobExecutionIdObj(jobExecution.getId()), jobInstanceIdObj(1L));
         removeSystemFields(instanceId);
         return mapJobInstance(getCollection().findOne(instanceId));
     }
 
-    @Override
     public List<JobInstance> getJobInstances(String jobName, int start, int count) {
         return mapJobInstances(getCollection().find(new BasicDBObject(JOB_NAME_KEY, jobName)).sort(jobInstanceIdObj(-1L)).skip(start).limit(count));
     }
 
     @SuppressWarnings({"unchecked"})
-    @Override
     public List<String> getJobNames() {
         List results = getCollection().distinct(JOB_NAME_KEY);
         Collections.sort(results);
@@ -144,7 +133,7 @@ public class MongoJobInstanceDao extends AbstractMongoDao implements JobInstance
     }
 
     private List<JobInstance> mapJobInstances(DBCursor dbCursor) {
-        List<JobInstance> results = Lists.newArrayList();
+        List<JobInstance> results = new ArrayList<JobInstance>();
         while (dbCursor.hasNext()) {
             results.add(mapJobInstance(dbCursor.next()));
         }
@@ -155,7 +144,7 @@ public class MongoJobInstanceDao extends AbstractMongoDao implements JobInstance
         return mapJobInstance(dbObject, null);
     }
 
-    private JobInstance mapJobInstance(@Nullable DBObject dbObject, JobParameters jobParameters) {
+    private JobInstance mapJobInstance(DBObject dbObject, JobParameters jobParameters) {
         JobInstance jobInstance = null;
         if (dbObject != null) {
             Long id = (Long) dbObject.get(JOB_INSTANCE_ID_KEY);
@@ -172,7 +161,7 @@ public class MongoJobInstanceDao extends AbstractMongoDao implements JobInstance
     private JobParameters getJobParameters(Long jobInstanceId) {
         final Map<String, ?> jobParamsMap = (Map<String, Object>) getCollection().findOne(new BasicDBObject(jobInstanceIdObj(jobInstanceId))).get(JOB_PARAMETERS_KEY);
 
-        Map<String, JobParameter> map = Maps.newHashMapWithExpectedSize(jobParamsMap.size());
+        Map<String, JobParameter> map = new HashMap<String, JobParameter>(jobParamsMap.size());
         for (Map.Entry<String, ?> entry : jobParamsMap.entrySet()) {
             Object param = entry.getValue();
             String key = entry.getKey().replaceAll(DOT_ESCAPE_STRING, DOT_STRING);

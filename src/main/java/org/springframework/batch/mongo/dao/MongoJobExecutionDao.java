@@ -1,6 +1,5 @@
 package org.springframework.batch.mongo.dao;
 
-import com.google.common.collect.Sets;
 import com.mongodb.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,11 +14,8 @@ import org.springframework.stereotype.Repository;
 import org.springframework.util.Assert;
 
 import javax.annotation.PostConstruct;
-import java.util.Date;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
-import static com.google.common.collect.Lists.newArrayList;
 import static com.mongodb.BasicDBObjectBuilder.start;
 import static org.springframework.batch.mongo.dao.MongoJobInstanceDao.JOB_INSTANCE_ID_KEY;
 import static org.springframework.batch.mongo.dao.MongoJobInstanceDao.jobInstanceIdObj;
@@ -42,7 +38,6 @@ public class MongoJobExecutionDao extends AbstractMongoDao implements JobExecuti
         getCollection().ensureIndex(BasicDBObjectBuilder.start().add(JOB_EXECUTION_ID_KEY, 1).add(JOB_INSTANCE_ID_KEY, 1).get());
     }
 
-    @Override
     public void saveJobExecution(JobExecution jobExecution) {
         validateJobExecution(jobExecution);
         jobExecution.incrementVersion();
@@ -79,7 +74,6 @@ public class MongoJobExecutionDao extends AbstractMongoDao implements JobExecuti
         Assert.notNull(jobExecution.getCreateTime(), "JobExecution create time cannot be null");
     }
 
-    @Override
     public synchronized void updateJobExecution(JobExecution jobExecution) {
         validateJobExecution(jobExecution);
 
@@ -120,13 +114,12 @@ public class MongoJobExecutionDao extends AbstractMongoDao implements JobExecuti
         jobExecution.incrementVersion();
     }
 
-    @Override
     public List<JobExecution> findJobExecutions(JobInstance jobInstance) {
         Assert.notNull(jobInstance, "Job cannot be null.");
         Long id = jobInstance.getId();
         Assert.notNull(id, "Job Id cannot be null.");
         DBCursor dbCursor = getCollection().find(jobInstanceIdObj(id)).sort(new BasicDBObject(JOB_EXECUTION_ID_KEY, -1));
-        List<JobExecution> result = newArrayList();
+        List<JobExecution> result = new ArrayList<JobExecution>();
         while (dbCursor.hasNext()) {
             DBObject dbObject = dbCursor.next();
             result.add(mapJobExecution(jobInstance, dbObject));
@@ -134,7 +127,6 @@ public class MongoJobExecutionDao extends AbstractMongoDao implements JobExecuti
         return result;
     }
 
-    @Override
     public JobExecution getLastJobExecution(JobInstance jobInstance) {
         Long id = jobInstance.getId();
 
@@ -150,10 +142,9 @@ public class MongoJobExecutionDao extends AbstractMongoDao implements JobExecuti
         }
     }
 
-    @Override
     public Set<JobExecution> findRunningJobExecutions(String jobName) {
         DBCursor instancesCursor = db.getCollection(JobInstance.class.getSimpleName()).find(new BasicDBObject(MongoJobInstanceDao.JOB_NAME_KEY, jobName), jobInstanceIdObj(1L));
-        List<Long> ids = newArrayList();
+        List<Long> ids = new ArrayList<Long>();
         while (instancesCursor.hasNext()) {
             ids.add((Long) instancesCursor.next().get(JOB_INSTANCE_ID_KEY));
         }
@@ -161,19 +152,17 @@ public class MongoJobExecutionDao extends AbstractMongoDao implements JobExecuti
         DBCursor dbCursor = getCollection().find(BasicDBObjectBuilder.start()
                 .add(JOB_INSTANCE_ID_KEY, new BasicDBObject("$in", ids.toArray()))
                 .add(END_TIME_KEY, null).get()).sort(jobExecutionIdObj(-1L));
-        Set<JobExecution> result = Sets.newHashSet();
+        Set<JobExecution> result = new HashSet<JobExecution>();
         while (dbCursor.hasNext()) {
             result.add(mapJobExecution(dbCursor.next()));
         }
         return result;
     }
 
-    @Override
     public JobExecution getJobExecution(Long executionId) {
         return mapJobExecution(getCollection().findOne(jobExecutionIdObj(executionId)));
     }
 
-    @Override
     public void synchronizeStatus(JobExecution jobExecution) {
         Long id = jobExecution.getId();
         DBObject jobExecutionObject = getCollection().findOne(jobExecutionIdObj(id));

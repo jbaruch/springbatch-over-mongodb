@@ -5,10 +5,10 @@ import org.springframework.batch.core.repository.dao.ExecutionContextDao;
 import org.springframework.batch.core.repository.dao.JobExecutionDao;
 import org.springframework.batch.core.repository.dao.JobInstanceDao;
 import org.springframework.batch.core.repository.dao.StepExecutionDao;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import javax.inject.Inject;
 
 /**
  * Created by IntelliJ IDEA.
@@ -20,13 +20,13 @@ import javax.inject.Inject;
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"classpath:application-config.xml"})
 public class MongoExecutionContextDaoTests extends AbstractExecutionContextDaoTests {
-    @Inject
+    @Autowired
     private JobExecutionDao jobExecutionDao;
-    @Inject
+    @Autowired
     private JobInstanceDao jobInstanceDao;
-    @Inject
+    @Autowired
     private StepExecutionDao stepExecutionDao;
-    @Inject
+    @Autowired
     private ExecutionContextDao executionContextDao;
 
     @Override

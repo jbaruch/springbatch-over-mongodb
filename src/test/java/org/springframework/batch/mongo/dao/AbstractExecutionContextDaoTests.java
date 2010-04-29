@@ -13,9 +13,9 @@ import org.springframework.batch.core.repository.dao.JobInstanceDao;
 import org.springframework.batch.core.repository.dao.StepExecutionDao;
 import org.springframework.batch.item.ExecutionContext;
 import org.springframework.batch.mongo.config.Database;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.inject.Inject;
 import java.util.Collections;
 
 import static org.junit.Assert.assertEquals;
@@ -38,7 +38,7 @@ public abstract class AbstractExecutionContextDaoTests {
 
     private StepExecution stepExecution;
 
-    @Inject
+    @Autowired
     @Database(Database.Purpose.BATCH)
     protected DB db;
 

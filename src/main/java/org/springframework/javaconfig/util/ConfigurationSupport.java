@@ -1,11 +1,11 @@
 package org.springframework.javaconfig.util;
 
 import org.springframework.beans.factory.FactoryBean;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.context.*;
 import org.springframework.stereotype.Component;
 
-import javax.inject.Inject;
 
 /**
  * Created by IntelliJ IDEA.
@@ -16,10 +16,10 @@ import javax.inject.Inject;
 @Component
 public class ConfigurationSupport {
 
-    @Inject
+    @Autowired
     private AutowireCapableBeanFactory autowireCapableBeanFactory;
 
-    @Inject
+    @Autowired
     private ApplicationContext applicationContext;
 
     /**

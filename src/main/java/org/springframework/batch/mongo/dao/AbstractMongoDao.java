@@ -5,8 +5,7 @@ import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import org.springframework.batch.mongo.config.Database;
-
-import javax.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Created by IntelliJ IDEA.
@@ -28,8 +27,10 @@ public abstract class AbstractMongoDao {
     protected static final String SEQUENCES_COLLECTION_NAME = "Sequences";
     public static final String ID_KEY = "_id";
     public static final String NS_KEY = "_ns";
+    public static final String DOT_ESCAPE_STRING = "\\{dot\\}";
+    public static final String DOT_STRING = "\\.";
 
-    @Inject
+    @Autowired
     @Database(Database.Purpose.BATCH)
     public void setDb(DB db) {
         this.db = db;

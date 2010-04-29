@@ -1,5 +1,7 @@
 package org.springframework.batch.mongo.config;
 
+import org.springframework.beans.factory.annotation.Qualifier;
+
 import java.lang.annotation.RetentionPolicy;
 
 /**
@@ -10,7 +12,7 @@ import java.lang.annotation.RetentionPolicy;
  */
 @java.lang.annotation.Documented
 @java.lang.annotation.Retention(RetentionPolicy.RUNTIME)
-@javax.inject.Qualifier
+@Qualifier
 public @interface Database {
     Purpose value();
 

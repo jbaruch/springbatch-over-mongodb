@@ -18,6 +18,7 @@ import org.springframework.batch.core.repository.dao.JobInstanceDao;
 import org.springframework.batch.core.repository.dao.StepExecutionDao;
 import org.springframework.batch.core.repository.support.SimpleJobRepository;
 import org.springframework.batch.support.transaction.ResourcelessTransactionManager;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -26,7 +27,6 @@ import org.springframework.javaconfig.util.ConfigurationSupport;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 
-import javax.inject.Inject;
 import java.net.UnknownHostException;
 
 /**
@@ -51,19 +51,19 @@ public class ApplicationConfiguration {
     private int maxPoolSize;
 
 
-    @Inject
+    @Autowired
     private ConfigurationSupport configurationSupport;
 
-    @Inject
+    @Autowired
     private ExecutionContextDao executionContextDao;
 
-    @Inject
+    @Autowired
     private JobExecutionDao jobExecutionDao;
 
-    @Inject
+    @Autowired
     private JobInstanceDao jobInstanceDao;
 
-    @Inject
+    @Autowired
     private StepExecutionDao stepExecutionDao;
 
     public static final String DOT_ESCAPE_STRING = "\\{dot\\}";

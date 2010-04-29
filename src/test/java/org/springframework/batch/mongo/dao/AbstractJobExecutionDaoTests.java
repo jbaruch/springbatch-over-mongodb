@@ -8,11 +8,11 @@ import org.springframework.batch.core.repository.dao.JobExecutionDao;
 import org.springframework.batch.core.repository.dao.JobInstanceDao;
 import org.springframework.batch.core.repository.dao.StepExecutionDao;
 import org.springframework.batch.mongo.config.Database;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
-import javax.inject.Inject;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -25,7 +25,7 @@ public abstract class AbstractJobExecutionDaoTests {
 
     protected JobExecution execution;
 
-    @Inject
+    @Autowired
     @Database(Database.Purpose.BATCH)
     protected DB db;
 

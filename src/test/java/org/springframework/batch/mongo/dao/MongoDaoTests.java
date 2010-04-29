@@ -6,10 +6,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.batch.mongo.config.Database;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import javax.inject.Inject;
 
 /**
  * Created by IntelliJ IDEA.
@@ -21,11 +21,11 @@ import javax.inject.Inject;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class MongoDaoTests {
 
-    @Inject
+    @Autowired
     @Database(Database.Purpose.BATCH)
     private DB batchDB;
 
-    @Inject
+    @Autowired
     private MongoJobExecutionDao dao;
 
     @Before

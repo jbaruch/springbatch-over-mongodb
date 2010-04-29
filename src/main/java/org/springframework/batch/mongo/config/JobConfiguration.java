@@ -9,13 +9,13 @@ import org.springframework.batch.core.step.item.SimpleStepFactoryBean;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.support.transaction.ResourcelessTransactionManager;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.javaconfig.util.ConfigurationSupport;
 
-import javax.inject.Inject;
 import java.util.Arrays;
 
 /**
@@ -34,22 +34,22 @@ public class JobConfiguration {
     private int commitInterval;
 
 
-    @Inject
+    @Autowired
     private JobRepository jobRepository;
 
-    @Inject
+    @Autowired
     private ItemReader<? extends String> itemReader;
 
-    @Inject
+    @Autowired
     private ItemWriter<? super Object> itemWriter;
 
-    @Inject
+    @Autowired
     private TaskExecutor taskExecutor;
 
-    @Inject
+    @Autowired
     private ConfigurationSupport configurationSupport;
 
-    @Inject
+    @Autowired
     private JobParametersIncrementer jobParametersIncrementer;
 
     @Bean

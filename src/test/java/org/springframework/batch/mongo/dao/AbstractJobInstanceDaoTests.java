@@ -8,9 +8,9 @@ import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.repository.dao.JobInstanceDao;
 import org.springframework.batch.mongo.config.Database;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.inject.Inject;
 import java.util.Date;
 import java.util.List;
 
@@ -30,7 +30,7 @@ public abstract class AbstractJobInstanceDaoTests {
 
     protected abstract JobInstanceDao getJobInstanceDao();
 
-    @Inject
+    @Autowired
     @Database(Database.Purpose.BATCH)
     protected DB db;
 

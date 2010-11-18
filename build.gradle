@@ -28,22 +28,22 @@ dependencies {
   compile "org.springframework:org.springframework.beans:3.0.2.RELEASE"
   compile "org.springframework:org.springframework.asm:3.0.2.RELEASE"
   compile "org.springframework:org.springframework.expression:3.0.2.RELEASE"
-  compile("org.springframework.batch:spring-batch-core:2.1.0.RELEASE") {
+  compile("org.springframework.batch:spring-batch-core:2.1.2.RELEASE") {
     exclude(module: 'spring-tx')
     exclude(module: 'spring-beans')
     exclude(module: 'spring-context')
     exclude(module: 'spring-aop')
     exclude(module: 'spring-core')
   }
-  compile("org.springframework.batch:spring-batch-infrastructure:2.1.0.RELEASE") {
+  compile("org.springframework.batch:spring-batch-infrastructure:2.1.2.RELEASE") {
     exclude(module: 'spring-core')
     exclude(module: 'commons-logging')
   }
-  compile "org.mongodb:mongo-java-driver:1.2.1"
+  compile "org.mongodb:mongo-java-driver:2.3"
   compile "commons-io:commons-io:1.4"
   testCompile "junit:junit:4.8.1"
   testCompile "org.springframework:org.springframework.test:3.0.2.RELEASE"
-  testCompile("org.springframework.batch:spring-batch-test:2.1.0.RELEASE") {
+  testCompile("org.springframework.batch:spring-batch-test:2.1.2.RELEASE") {
     exclude(module: 'spring-test')
     exclude(module: 'spring-jdbc')
     exclude(module: 'commons-io')
